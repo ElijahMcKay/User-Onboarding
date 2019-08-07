@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { withFormik, Form, Field } from "formik"; 
 import * as Yup from "yup"; 
 import axios from "axios"; 
 
-function Form({ values, errors, touched, isSubmitting }) {
+function nameForm({ values, errors, touched, isSubmitting }){
 
     return (
         <Form>
@@ -43,4 +43,52 @@ function Form({ values, errors, touched, isSubmitting }) {
     )
 }
 
-export default FormikForm
+
+    const FormikForm = withFormik({
+        mapPropsToValues({ name, email, password, tos }) {
+            return {
+                name: name || '', 
+                email: email || '', 
+                password: password || '', 
+                tos: tos || false,
+            }
+        },
+
+    //=============== VALIDATION SCHEMA =================
+    validationSchema: Yup.object().shape({
+        name: Yup.string().min(5, "Name must be longer than 5 characters.").required("Name is required"),
+        email: Yup.string().email("Email is not valid").required("Email is required"),
+        password: Yup.string().min(6, "Password must be 6 characters or longer").required("Password is required"),
+        tos: Yup.bool()
+        .oneOf([true], 'You must accept the terms')
+        .required('You have to agree with our terms')
+    }),
+//=============== END VALIDATION SCHEMA ===============
+
+    handleSubmit(values, { resetForm, setErrors, setSubmitting }) {
+        // console.log(values); 
+        //HTTP REQUESTS
+
+        const [users, setUsers] = useState([]); 
+
+        if (values.email === "alreadytaken@atb.dev") {
+            setErrors({ email: "That email is already taken" }); 
+        } else {
+            axios  
+                .post("https://reqres.in/api/users", values)
+                .then(res => {
+                    console.log(res); 
+                    resetForm(); 
+                    setSubmitting(false); 
+                    setUsers(res.data.email)
+                    console.log(users); 
+                })
+                .catch(err => {
+                    console.log(err); 
+                    setSubmitting(false); 
+                }); 
+            }
+        }
+    })(nameForm); 
+
+export default FormikForm; 
